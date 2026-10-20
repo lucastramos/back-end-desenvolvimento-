@@ -1,4 +1,4 @@
-# Livraria API (Node + Express) — Segurança
+# Livraria API (Node + Express) — Segurança + Documentação OpenAPI
 
 ## Como rodar
 ```bash
@@ -6,6 +6,41 @@ npm install
 cp .env.example .env   # troque o JWT_SECRET
 npm start
 ```
+
+## 📖 Documentação (OpenAPI 3.0 + Swagger UI)
+
+| Recurso | URL |
+|---|---|
+| **Swagger UI** (interativo, com botão *Authorize*) | http://localhost:3000/docs |
+| Alias | http://localhost:3000/api/docs |
+| **Especificação OpenAPI bruta (JSON)** | http://localhost:3000/docs/api.json |
+| Alias da especificação | http://localhost:3000/api-docs.json |
+
+Gerada com **swagger-jsdoc** (anotações `@openapi` em `routes/*.js`) e servida com **swagger-ui-express**. A base da especificação (Security Scheme, schemas e respostas de erro reutilizáveis) fica em `docs/swagger.js`.
+
+### Testando as rotas protegidas pelo navegador
+1. Em `/docs`, execute **POST `/api/v1/auth/login`** (o corpo já vem com exemplos de ADMIN e USER).
+2. Copie o `token` da resposta.
+3. Clique em **Authorize** 🔓 e cole **apenas o token** — o prefixo `Bearer` é adicionado automaticamente.
+4. Teste as rotas com cadeado. Para ver o **403**, autorize com o token do leitor e tente criar um autor ou livro.
+
+O token continua salvo ao recarregar a página (`persistAuthorization`).
+
+### O que está documentado em cada rota
+- **Sumário e descrição** com o perfil de acesso e as regras de negócio.
+- **Request body** com campos `required`, tipos (`string`, `integer`, `email`…) e exemplos realistas.
+- **Respostas** de sucesso (200/201) com schema e exemplo, e de erro: 400 (validação), 401 (token ausente, expirado ou corrompido), 403 (perfil USER em rota ADMIN), 404, 409 e 500.
+
+| Método | Rota | Perfil | Sucesso | Falhas documentadas |
+|---|---|---|---|---|
+| GET | `/api/v1/livros` | Público | 200 | 500 |
+| GET | `/api/v1/livros/{id}` | Público | 200 | 404 |
+| POST | `/api/v1/auth/register` | Público | 201 | 400, 409 |
+| POST | `/api/v1/auth/login` | Público | 200 | 400, 401 |
+| POST | `/api/v1/livros/{id}/comentarios` | USER ou ADMIN | 201 | 400, 401, 404 |
+| POST | `/api/v1/autores` | ADMIN | 201 | 400, 401, 403 |
+| POST | `/api/v1/livros` | ADMIN | 201 | 400, 401, 403, 404 |
+| GET | `/api/v1/autores` | Público | 200 | 500 |
 
 ## Segurança implementada
 - **BCrypt** (`bcryptjs`): senhas armazenadas só como hash (salt aleatório + work factor 12 nos novos cadastros).
